@@ -17,9 +17,9 @@ type DAOCOutPacket struct {
 func (p *PacketLogger) parseDAOCOutPacket(buf []byte) DAOCOutPacket {
 	len := len(buf)
 	packet := DAOCOutPacket{
-		Size:    binary.BigEndian.Uint16(buf[0:4]),
-		Code:    uint(buf[4]),
-		Message: buf[5:len],
+		Size:    binary.BigEndian.Uint16(buf[0:2]),
+		Code:    uint(buf[2]),
+		Message: buf[3:len],
 	}
 
 	fmt.Printf("OUT/TCP - %v\n", packet.ToString())

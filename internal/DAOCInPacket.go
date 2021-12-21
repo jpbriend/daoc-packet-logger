@@ -21,12 +21,12 @@ type DAOCInPacket struct {
 func (p *PacketLogger) parseDAOCInPacket(buf []byte) DAOCInPacket {
 	len := len(buf)
 	packet := DAOCInPacket{
-		Size:        binary.BigEndian.Uint16(buf[0:4]),
-		PacketCount: binary.BigEndian.Uint16(buf[4:6]),
-		SessionID:   binary.BigEndian.Uint16(buf[6:8]),
-		Parameter:   binary.BigEndian.Uint16(buf[8:10]),
-		Code:        uint(buf[11]),
-		Message:     buf[12 : len-2],
+		Size:        binary.BigEndian.Uint16(buf[0:2]),
+		PacketCount: binary.BigEndian.Uint16(buf[2:4]),
+		SessionID:   binary.BigEndian.Uint16(buf[4:6]),
+		Parameter:   binary.BigEndian.Uint16(buf[6:8]),
+		Code:        uint(buf[9]),
+		Message:     buf[10 : len-2],
 		Checksum:    binary.BigEndian.Uint16(buf[len-2 : len]),
 	}
 
