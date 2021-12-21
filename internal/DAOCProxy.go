@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -49,48 +47,15 @@ func (p *PacketLogger) Write(content []byte) (n int, err error) {
 	return len(content), nil
 }
 
-type DAOCPacket struct {
-	Size        uint16
-	PacketCount uint16
-	SessionID   uint16
-	Parameter   uint16
-	Code        uint
-	Message     []byte
-	Checksum    uint16
-}
-
 func (p *PacketLogger) processDAOCMessage(content []byte) {
-	// Remove first packet as it's always 0
-	p.parsePacket(content[0:])
-}
-
-func (p *PacketLogger) parsePacket(buf []byte) DAOCPacket {
-	len := len(buf)
-	packet := DAOCPacket{
-		Size:        binary.BigEndian.Uint16(buf[0:2]),
-		PacketCount: binary.BigEndian.Uint16(buf[2:4]),
-		SessionID:   binary.BigEndian.Uint16(buf[4:6]),
-		Parameter:   binary.BigEndian.Uint16(buf[6:8]),
-		Code:        uint(buf[9]),
-		Message:     buf[10 : len-2],
-		Checksum:    binary.BigEndian.Uint16(buf[len-2 : len]),
+	if p.Way == "IN" {
+		p.parseDAOCInPacket(content)
+	} else {
+		p.parseDAOCOutPacket(content)
 	}
-
-	fmt.Printf("%s/TCP - %v\n", p.Way, packet.ToString())
-	return packet
 }
 
-func (d *DAOCPacket) ToString() string {
-	result := fmt.Sprintf("Size: %v #%v Code: 0x%X SessionID: 0x%X Param: 0x%X\n",
-		d.Size,
-		d.PacketCount,
-		d.Code,
-		d.SessionID,
-		d.Parameter)
-
-	result = result + hex.Dump(d.Message)
-	return result
-}
+// Connection //
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
@@ -107,9 +72,9 @@ func handleConnection(conn net.Conn) {
 	wg.Add(2)
 
 	go func() {
-		//serverToClient := PacketLogger{Way: "OUT"}
-		//writer := io.MultiWriter(&serverToClient, conn)
-		io.Copy(conn, backendConn)
+		serverToClient := PacketLogger{Way: "OUT"}
+		writer := io.MultiWriter(&serverToClient, conn)
+		io.Copy(writer, backendConn)
 		conn.(*net.TCPConn).CloseWrite()
 		wg.Done()
 	}()
