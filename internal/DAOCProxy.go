@@ -7,12 +7,14 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 var (
 	rHost     string
 	rPort     int
 	debugMode bool
+	startTime time.Time
 )
 
 func Start(listenPort int, remoteHost string, remotePort int, isDebug bool) error {
@@ -42,7 +44,8 @@ func Start(listenPort int, remoteHost string, remotePort int, isDebug bool) erro
 }
 
 type PacketLogger struct {
-	Way string
+	Way       string
+	StartTime time.Time
 }
 
 func (p *PacketLogger) Write(content []byte) (n int, err error) {
@@ -55,6 +58,10 @@ func (p *PacketLogger) Write(content []byte) (n int, err error) {
 }
 
 func (p *PacketLogger) processDAOCMessage(content []byte) {
+	if startTime.IsZero() {
+		startTime = time.Now()
+	}
+	p.StartTime = startTime
 	if p.Way == "IN" {
 		p.parseDAOCInPacket(content)
 	} else {
@@ -79,14 +86,14 @@ func handleConnection(conn net.Conn) {
 	wg.Add(2)
 
 	go func() {
-		serverToClient := PacketLogger{Way: "OUT"}
+		serverToClient := PacketLogger{Way: "OUT", StartTime: startTime}
 		writer := io.MultiWriter(&serverToClient, conn)
 		io.Copy(writer, backendConn)
 		conn.(*net.TCPConn).CloseWrite()
 		wg.Done()
 	}()
 	go func() {
-		clientToServer := PacketLogger{Way: "IN"}
+		clientToServer := PacketLogger{Way: "IN", StartTime: startTime}
 		writer := io.MultiWriter(&clientToServer, backendConn)
 		io.Copy(writer, conn)
 		backendConn.(*net.TCPConn).CloseWrite()

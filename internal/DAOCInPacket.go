@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"time"
 )
 
 // IN Packet //
@@ -29,7 +30,9 @@ func (p *PacketLogger) parseDAOCInPacket(buf []byte) {
 		Checksum:    binary.BigEndian.Uint16(buf[10+binary.BigEndian.Uint16(buf[0:2]) : 12+binary.BigEndian.Uint16(buf[0:2])]),
 	}
 
-	fmt.Printf("IN/TCP - %v\n", packet.ToString())
+	fmt.Printf("IN/TCP - Time: %v %v\n",
+		time.Since(p.StartTime).Milliseconds(),
+		packet.ToString())
 
 	// if there is a following message, parse it
 	remainingBuffer := buf[12+packet.Size:]
