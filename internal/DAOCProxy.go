@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -9,13 +10,15 @@ import (
 )
 
 var (
-	rHost string
-	rPort int
+	rHost     string
+	rPort     int
+	debugMode bool
 )
 
-func Start(listenPort int, remoteHost string, remotePort int) error {
+func Start(listenPort int, remoteHost string, remotePort int, isDebug bool) error {
 	rHost = remoteHost
 	rPort = remotePort
+	debugMode = isDebug
 
 	fmt.Printf("Starting proxy listening on port %v\n", listenPort)
 
@@ -43,6 +46,10 @@ type PacketLogger struct {
 }
 
 func (p *PacketLogger) Write(content []byte) (n int, err error) {
+	if debugMode {
+		fmt.Printf("Message received: %v\n", hex.Dump(content))
+	}
+
 	p.processDAOCMessage(content)
 	return len(content), nil
 }
