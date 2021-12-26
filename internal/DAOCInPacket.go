@@ -18,20 +18,26 @@ type DAOCInPacket struct {
 	Checksum    uint16
 }
 
-func (p *PacketLogger) parseDAOCInPacket(buf []byte) DAOCInPacket {
-	len := len(buf)
+func (p *PacketLogger) parseDAOCInPacket(buf []byte) {
 	packet := DAOCInPacket{
 		Size:        binary.BigEndian.Uint16(buf[0:2]),
 		PacketCount: binary.BigEndian.Uint16(buf[2:4]),
 		SessionID:   binary.BigEndian.Uint16(buf[4:6]),
 		Parameter:   binary.BigEndian.Uint16(buf[6:8]),
 		Code:        uint(buf[9]),
-		Message:     buf[10 : len-2],
-		Checksum:    binary.BigEndian.Uint16(buf[len-2 : len]),
+		Message:     buf[10 : 10+binary.BigEndian.Uint16(buf[0:2])],
+		Checksum:    binary.BigEndian.Uint16(buf[10+binary.BigEndian.Uint16(buf[0:2]) : 12+binary.BigEndian.Uint16(buf[0:2])]),
 	}
 
 	fmt.Printf("IN/TCP - %v\n", packet.ToString())
-	return packet
+
+	// if there is a following message, parse it
+	remainingBuffer := buf[12+packet.Size:]
+
+	if len(remainingBuffer) > 0 {
+		p.parseDAOCInPacket(buf[12+binary.BigEndian.Uint16(buf[0:2]):])
+	}
+	return
 }
 
 func (d *DAOCInPacket) ToString() string {
